@@ -8,14 +8,13 @@ import (
 )
 
 func callback(d *json.Decoder, path string) error {
-	fmt.Println(path)
 	if path == `."some"[]."nested"."structure"` {
 		var v any
 		err := d.Decode(&v)
 		if err != nil {
 			return err
 		}
-		fmt.Println(v)
+		fmt.Println("found!", path, v)
 	}
 	return nil
 }
