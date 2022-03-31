@@ -59,4 +59,4 @@ fn := func(path []json.Token) error {
 jsoniter.Iterate(d, fn)
 ```
 
-If a value is consumed by the callback `jsoniter` will continue on with the rest of the document.
+If a value is consumed by the callback `Iterate` will continue on with the rest of the document.
