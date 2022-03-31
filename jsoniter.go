@@ -1,16 +1,13 @@
-package streamingjson
+package jsoniter
 
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
-	"strings"
 )
 
 type PathExpr string
 
-var Object PathExpr = "."
 var Array PathExpr = "[]"
 
 const (
@@ -20,16 +17,18 @@ const (
 	tokenObjectEnd   = json.Delim('}')
 )
 
-func PathString(path []json.Token) string {
-	var b strings.Builder
-	for _, t := range path {
-		s := fmt.Sprintf("%v", t)
-		if strings.ContainsAny(s, ".[]") {
-			s = fmt.Sprintf("%q", s)
+func Matcher(pattern ...json.Token) func(path []json.Token) bool {
+	return func(path []json.Token) bool {
+		if len(pattern) != len(path) {
+			return false
 		}
-		b.WriteString(s)
+		for i := range pattern {
+			if pattern[i] != path[i] {
+				return false
+			}
+		}
+		return true
 	}
-	return b.String()
 }
 
 func value(d *json.Decoder, path []json.Token, fn func(path []json.Token) error) error {
@@ -51,7 +50,7 @@ func value(d *json.Decoder, path []json.Token, fn func(path []json.Token) error)
 	case tokenArrayStart:
 		return array(d, append(path, Array), fn)
 	case tokenObjectStart:
-		return object(d, append(path, Object), fn)
+		return object(d, path, fn)
 	case tokenObjectEnd:
 		return errors.New("unexpected delim }")
 	case tokenArrayEnd:
@@ -100,7 +99,7 @@ func array(d *json.Decoder, path []json.Token, fn func(path []json.Token) error)
 // Iterate will call fn for every path in the JSON document.
 func Iterate(d *json.Decoder, fn func(path []json.Token) error) error {
 	for {
-		err := value(d, make([]json.Token, 0, 64), fn)
+		err := value(d, make([]json.Token, 0, 32), fn)
 
 		if err == io.EOF {
 			break
