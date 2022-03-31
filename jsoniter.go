@@ -37,12 +37,15 @@ func value(d *json.Decoder, path []json.Token, fn func(path []json.Token) error)
 	if err := fn(path); err != nil {
 		return err
 	}
-	// If the offset has moved on, do not consume the next token as the callback must have.
+	// If the offset has moved on then do not consume the value as the callback must have.
 	if d.InputOffset() != offset {
 		return nil
 	}
 
 	t, err := d.Token()
+	if err == io.EOF {
+		return nil
+	}
 	if err != nil {
 		return err
 	}
@@ -81,8 +84,7 @@ func object(d *json.Decoder, path []json.Token, fn func(path []json.Token) error
 
 func array(d *json.Decoder, path []json.Token, fn func(path []json.Token) error) error {
 	for d.More() {
-		err := value(d, path, fn)
-		if err != nil {
+		if err := value(d, path, fn); err != nil {
 			return err
 		}
 	}
@@ -98,15 +100,5 @@ func array(d *json.Decoder, path []json.Token, fn func(path []json.Token) error)
 
 // Iterate will call fn for every path in the JSON document.
 func Iterate(d *json.Decoder, fn func(path []json.Token) error) error {
-	for {
-		err := value(d, make([]json.Token, 0, 32), fn)
-
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			return err
-		}
-	}
-	return nil
+	return value(d, make([]json.Token, 0, 32), fn)
 }
