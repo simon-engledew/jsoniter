@@ -28,7 +28,7 @@ func TestUnmarshal(t *testing.T) {
 
 	fn := func(path []json.Token) error {
 		if matcher(path) {
-			require.NoError(t, d.Decode(&found))
+			return d.Decode(&found)
 		}
 		return nil
 	}
