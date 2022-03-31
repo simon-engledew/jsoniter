@@ -13,7 +13,7 @@ d := json.NewDecoder(os.Stdin)
 
 fn := func(path []json.Token) error {
     fmt.Println(path)
-		return nil
+    return nil
 }
 
 jsoniter.Iterate(d, fn)
