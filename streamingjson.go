@@ -5,9 +5,13 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"strings"
 )
 
-type Callback func(d *json.Decoder, path string) error
+type PathExpr string
+
+var Object PathExpr = "."
+var Array PathExpr = "[]"
 
 const (
 	tokenArrayStart  = json.Delim('[')
@@ -16,9 +20,22 @@ const (
 	tokenObjectEnd   = json.Delim('}')
 )
 
-func value(d *json.Decoder, path string, fn Callback) error {
+func PathString(path []json.Token) string {
+	var b strings.Builder
+	for _, t := range path {
+		s := fmt.Sprintf("%v", t)
+		if strings.ContainsAny(s, ".[]") {
+			s = fmt.Sprintf("%q", s)
+		}
+		b.WriteString(s)
+	}
+	return b.String()
+}
+
+func value(d *json.Decoder, path []json.Token, fn func(path []json.Token) error) error {
 	offset := d.InputOffset()
-	if err := fn(d, path); err != nil {
+
+	if err := fn(path); err != nil {
 		return err
 	}
 	// If the offset has moved on, do not consume the next token as the callback must have.
@@ -32,9 +49,9 @@ func value(d *json.Decoder, path string, fn Callback) error {
 	}
 	switch t {
 	case tokenArrayStart:
-		return array(d, path, fn)
+		return array(d, append(path, Array), fn)
 	case tokenObjectStart:
-		return object(d, path, fn)
+		return object(d, append(path, Object), fn)
 	case tokenObjectEnd:
 		return errors.New("unexpected delim }")
 	case tokenArrayEnd:
@@ -43,13 +60,13 @@ func value(d *json.Decoder, path string, fn Callback) error {
 	return nil
 }
 
-func object(d *json.Decoder, path string, fn Callback) error {
+func object(d *json.Decoder, path []json.Token, fn func(path []json.Token) error) error {
 	for d.More() {
 		key, err := d.Token()
 		if err != nil {
 			return err
 		}
-		if err := value(d, fmt.Sprintf("%s.%q", path, key), fn); err != nil {
+		if err := value(d, append(path, key), fn); err != nil {
 			return err
 		}
 	}
@@ -63,9 +80,9 @@ func object(d *json.Decoder, path string, fn Callback) error {
 	return nil
 }
 
-func array(d *json.Decoder, path string, fn Callback) error {
+func array(d *json.Decoder, path []json.Token, fn func(path []json.Token) error) error {
 	for d.More() {
-		err := value(d, fmt.Sprintf("%s[]", path), fn)
+		err := value(d, path, fn)
 		if err != nil {
 			return err
 		}
@@ -80,10 +97,10 @@ func array(d *json.Decoder, path string, fn Callback) error {
 	return nil
 }
 
-// Decode will call fn for every path in the JSON document.
-func Decode(d *json.Decoder, fn Callback) error {
+// Iterate will call fn for every path in the JSON document.
+func Iterate(d *json.Decoder, fn func(path []json.Token) error) error {
 	for {
-		err := value(d, "", fn)
+		err := value(d, make([]json.Token, 0, 64), fn)
 
 		if err == io.EOF {
 			break
