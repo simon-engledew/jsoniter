@@ -9,6 +9,34 @@ import (
 	"testing"
 )
 
+func TestUnmarshal(t *testing.T) {
+	doc := `{
+	  "some": [{
+		"nested": {
+		  "structure": {
+			"a": 1
+		  }
+		}
+	  }]
+	}`
+
+	d := json.NewDecoder(strings.NewReader(doc))
+
+	matcher := jsoniter.Matcher("some", jsoniter.Array, "nested", "structure")
+
+	var found any
+
+	fn := func(path []json.Token) error {
+		if matcher(path) {
+			require.NoError(t, d.Decode(&found))
+		}
+		return nil
+	}
+
+	require.NoError(t, jsoniter.Iterate(d, fn))
+	require.Equal(t, map[string]any{"a": 1.0}, found)
+}
+
 func TestInvalid(t *testing.T) {
 	doc := `{
 	  "some": [}`
