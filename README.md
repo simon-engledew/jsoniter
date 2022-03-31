@@ -21,7 +21,7 @@ jsoniter.Iterate(d, fn)
 
 Path will contain a slice of string keys or int array indexes that describe the location of the value in the document.
 
-To match values that you are interested, iterjson provides a basic matcher:
+To match values that you are interested in, `iterjson` provides a basic matcher:
 
 ```golang
 d := json.NewDecoder(os.Stdin)
