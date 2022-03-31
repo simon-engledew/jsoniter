@@ -6,9 +6,7 @@ import (
 	"io"
 )
 
-type PathExpr string
-
-var Wildcard PathExpr = "*"
+const Wildcard = iota
 
 const (
 	tokenArrayStart  = json.Delim('[')

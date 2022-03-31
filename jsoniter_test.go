@@ -2,6 +2,7 @@ package jsoniter_test
 
 import (
 	"encoding/json"
+	"errors"
 	"github.com/simon-engledew/jsoniter"
 	"github.com/stretchr/testify/require"
 	"io"
@@ -95,4 +96,28 @@ func TestIterate(t *testing.T) {
 
 	require.NoError(t, jsoniter.Iterate(d, fn))
 	require.Equal(t, 2, hits)
+	require.Equal(t, d.InputOffset(), int64(len(doc)))
+}
+
+func TestStop(t *testing.T) {
+	doc := `{
+	  "some": [{
+		"nested": {
+		  "structure": {
+			"a": 1
+		  }
+		}
+	  }]
+	}`
+
+	d := json.NewDecoder(strings.NewReader(doc))
+
+	stopErr := errors.New("stop")
+
+	fn := func(path []json.Token) error {
+		return stopErr
+	}
+
+	require.ErrorIs(t, jsoniter.Iterate(d, fn), stopErr)
+	require.Less(t, d.InputOffset(), int64(len(doc)))
 }
