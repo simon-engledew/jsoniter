@@ -21,7 +21,7 @@ jsoniter.Iterate(d, fn)
 
 `path` will contain a slice of string keys or int array indexes that describe the location of the value in the document. Do not modify or retain it during the callback.
 
-To match values that you are interested in, `iterjson` provides a basic matcher:
+To match values that you are interested in, `jsoniter` provides a basic matcher:
 
 ```golang
 d := json.NewDecoder(os.Stdin)
@@ -59,4 +59,4 @@ fn := func(path []json.Token) error {
 jsoniter.Iterate(d, fn)
 ```
 
-If a value is consumed by the callback `iterjson` will continue on with the rest of the document.
+If a value is consumed by the callback `jsoniter` will continue on with the rest of the document.
