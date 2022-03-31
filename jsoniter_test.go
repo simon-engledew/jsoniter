@@ -22,7 +22,7 @@ func TestUnmarshal(t *testing.T) {
 
 	d := json.NewDecoder(strings.NewReader(doc))
 
-	matcher := jsoniter.Matcher("some", jsoniter.Array, "nested", "structure")
+	matcher := jsoniter.Matcher("some", 0, "nested", "structure")
 
 	var found any
 
@@ -82,7 +82,7 @@ func TestIterate(t *testing.T) {
 
 	d := json.NewDecoder(strings.NewReader(doc))
 
-	matcher := jsoniter.Matcher("some", jsoniter.Array, "nested", "structure")
+	matcher := jsoniter.Matcher("some", jsoniter.Wildcard, "nested", "structure")
 
 	var hits int
 

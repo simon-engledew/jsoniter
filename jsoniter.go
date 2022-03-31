@@ -8,7 +8,7 @@ import (
 
 type PathExpr string
 
-var Array PathExpr = "[]"
+var Wildcard PathExpr = "*"
 
 const (
 	tokenArrayStart  = json.Delim('[')
@@ -22,8 +22,8 @@ func Matcher(pattern ...json.Token) func(path []json.Token) bool {
 		if len(pattern) != len(path) {
 			return false
 		}
-		for i := range pattern {
-			if pattern[i] != path[i] {
+		for i, v := range pattern {
+			if v != Wildcard && v != path[i] {
 				return false
 			}
 		}
@@ -51,7 +51,7 @@ func value(d *json.Decoder, path []json.Token, fn func(path []json.Token) error)
 	}
 	switch t {
 	case tokenArrayStart:
-		return array(d, append(path, Array), fn)
+		return array(d, path, fn)
 	case tokenObjectStart:
 		return object(d, path, fn)
 	case tokenObjectEnd:
@@ -83,10 +83,12 @@ func object(d *json.Decoder, path []json.Token, fn func(path []json.Token) error
 }
 
 func array(d *json.Decoder, path []json.Token, fn func(path []json.Token) error) error {
+	index := 0
 	for d.More() {
-		if err := value(d, path, fn); err != nil {
+		if err := value(d, append(path, index), fn); err != nil {
 			return err
 		}
+		index += 1
 	}
 	t, err := d.Token()
 	if err != nil {
