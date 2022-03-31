@@ -19,7 +19,7 @@ fn := func(path []json.Token) error {
 jsoniter.Iterate(d, fn)
 ```
 
-Path will contain a slice of string keys or int array indexes that describe the location of the value in the document.
+`path` will contain a slice of string keys or int array indexes that describe the location of the value in the document.
 
 To match values that you are interested in, `iterjson` provides a basic matcher:
 
