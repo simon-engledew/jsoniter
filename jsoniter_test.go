@@ -27,14 +27,14 @@ func TestUnmarshal(t *testing.T) {
 
 	var found any
 
-	fn := func(path []json.Token) error {
+	err := jsoniter.Iterate(d, func(path []json.Token) error {
 		if matcher(path) {
 			return d.Decode(&found)
 		}
 		return nil
-	}
+	})
 
-	require.NoError(t, jsoniter.Iterate(d, fn))
+	require.NoError(t, err)
 	require.Equal(t, map[string]any{"a": 1.0}, found)
 }
 
@@ -44,11 +44,11 @@ func TestInvalid(t *testing.T) {
 
 	d := json.NewDecoder(strings.NewReader(doc))
 
-	fn := func(path []json.Token) error {
+	err := jsoniter.Iterate(d, func(path []json.Token) error {
 		return nil
-	}
+	})
 
-	require.ErrorContains(t, jsoniter.Iterate(d, fn), `invalid character '}' looking for beginning of value`)
+	require.ErrorContains(t, err, `invalid character '}' looking for beginning of value`)
 }
 
 func TestEOF(t *testing.T) {
@@ -57,11 +57,24 @@ func TestEOF(t *testing.T) {
 
 	d := json.NewDecoder(strings.NewReader(doc))
 
-	fn := func(path []json.Token) error {
+	err := jsoniter.Iterate(d, func(path []json.Token) error {
 		return nil
-	}
+	})
 
-	require.ErrorIs(t, jsoniter.Iterate(d, fn), io.EOF)
+	require.ErrorIs(t, err, io.EOF)
+}
+
+func count(d *json.Decoder, matcher func(path []json.Token) bool) (int, error) {
+	var hits int
+
+	err := jsoniter.Iterate(d, func(path []json.Token) error {
+		if matcher(path) {
+			hits += 1
+		}
+		return nil
+	})
+
+	return hits, err
 }
 
 func TestIterate(t *testing.T) {
@@ -85,16 +98,9 @@ func TestIterate(t *testing.T) {
 
 	matcher := jsoniter.Matcher("some", jsoniter.Wildcard, "nested", "structure")
 
-	var hits int
+	hits, err := count(d, matcher)
 
-	fn := func(path []json.Token) error {
-		if matcher(path) {
-			hits += 1
-		}
-		return nil
-	}
-
-	require.NoError(t, jsoniter.Iterate(d, fn))
+	require.NoError(t, err)
 	require.Equal(t, 2, hits)
 	require.Equal(t, d.InputOffset(), int64(len(doc)))
 }
@@ -114,10 +120,31 @@ func TestStop(t *testing.T) {
 
 	stopErr := errors.New("stop")
 
-	fn := func(path []json.Token) error {
+	err := jsoniter.Iterate(d, func(path []json.Token) error {
 		return stopErr
-	}
+	})
 
-	require.ErrorIs(t, jsoniter.Iterate(d, fn), stopErr)
+	require.ErrorIs(t, err, stopErr)
 	require.Less(t, d.InputOffset(), int64(len(doc)))
+}
+
+func TestMiss(t *testing.T) {
+	doc := `{
+	  "some": [{
+		"nested": {
+		  "structure": {
+			"a": 1
+		  }
+		}
+	  }]
+	}`
+
+	d := json.NewDecoder(strings.NewReader(doc))
+
+	matcher := jsoniter.Matcher("some", jsoniter.Wildcard, "nested", "structure", "c")
+
+	hits, err := count(d, matcher)
+
+	require.NoError(t, err)
+	require.Zero(t, hits)
 }

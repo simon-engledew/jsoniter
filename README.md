@@ -2,61 +2,102 @@
 
 Avoid loading large JSON documents into memory by only deserializing the parts you are interested in.
 
-A basic streaming JSON wrapper for the Go encoding/json Decoder.
+A basic streaming JSON wrapper for the Go `encoding/json` `Decoder`.
 
 ## Usage
 
-Use `Iterate` to fire a callback for every object / array value in the JSON document:
+Use `jsoniter.Iterate` to fire a callback for every object and array value in the JSON document:
 
 ```golang
-d := json.NewDecoder(os.Stdin)
+package main
 
-fn := func(path []json.Token) error {
-    fmt.Println(path)
-    return nil
+import (
+	"encoding/json"
+	"fmt"
+	"github.com/simon-engledew/jsoniter"
+	"os"
+)
+
+func main() {
+	d := json.NewDecoder(os.Stdin)
+
+	err := jsoniter.Iterate(d, func(path []json.Token) error {
+		fmt.Println(path)
+		return nil
+	})
+	if err != nil {
+		panic(err)
+    }
 }
-
-jsoniter.Iterate(d, fn)
 ```
 
-`path` will contain a slice of string keys or int array indexes that describe the location of the value in the document. Do not modify or retain it during the callback.
+`path` will contain a slice of `string` keys or `int` array indexes that describe the location of the value in the document. Do not modify or retain it during the callback.
 
 To match values that you are interested in, `jsoniter` provides a basic matcher:
 
 ```golang
-d := json.NewDecoder(os.Stdin)
+package main
 
-matcher := jsoniter.Matcher("some", jsoniter.Wildcard, "nested", "structure")
+import (
+	"encoding/json"
+	"fmt"
+	"github.com/simon-engledew/jsoniter"
+	"os"
+)
 
-var hits int
+func main() {
+	d := json.NewDecoder(os.Stdin)
 
-fn := func(path []json.Token) error {
-  if matcher(path) {
-    hits += 1
-  }
-  return nil
+	// jsoniter.Wildcard will match any token
+	// .some[*].nested.structure
+	matcher := jsoniter.Matcher("some", jsoniter.Wildcard, "nested", "structure")
+
+	var hits int
+
+	err := jsoniter.Iterate(d, func(path []json.Token) error {
+		if matcher(path) {
+			hits += 1
+		}
+		return nil
+	})
+	if err != nil {
+		panic(err)
+    }
+	fmt.Printf("found %d items matching path\n", hits)
 }
-
-jsoniter.Iterate(d, fn)
 ```
 
 By closing over the decoder it is also possible to decode values during iteration:
 
 ```golang
-d := json.NewDecoder(os.Stdin)
+package main
 
-matcher := jsoniter.Matcher("some", 0, "nested", "structure")
+import (
+	"encoding/json"
+	"fmt"
+	"github.com/simon-engledew/jsoniter"
+	"os"
+)
 
-var found any
+func main() {
+	d := json.NewDecoder(os.Stdin)
 
-fn := func(path []json.Token) error {
-  if matcher(path) {
-    return d.Decode(&found)
-  }
-  return nil
+	// .some[0].nested.structure
+	matcher := jsoniter.Matcher("some", 0, "nested", "structure")
+
+	var found any
+
+	err := jsoniter.Iterate(d, func(path []json.Token) error {
+		if matcher(path) {
+			return d.Decode(&found)
+		}
+		return nil
+	})
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println("found: ", found)
 }
-
-jsoniter.Iterate(d, fn)
 ```
 
 If a value is consumed by the callback `Iterate` will continue on with the rest of the document.

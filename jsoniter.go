@@ -3,7 +3,6 @@ package jsoniter
 import (
 	"encoding/json"
 	"errors"
-	"io"
 )
 
 const Wildcard = iota
@@ -41,9 +40,6 @@ func value(d *json.Decoder, path []json.Token, fn func(path []json.Token) error)
 	}
 
 	t, err := d.Token()
-	if err == io.EOF {
-		return nil
-	}
 	if err != nil {
 		return err
 	}
