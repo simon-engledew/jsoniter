@@ -25,7 +25,7 @@ func TestUnmarshal(t *testing.T) {
 
 	matcher := jsoniter.Matcher("some", 0, "nested", "structure")
 
-	var found any
+	var found map[string]int
 
 	err := jsoniter.Iterate(d, func(path []json.Token) error {
 		if matcher(path) {
@@ -35,7 +35,7 @@ func TestUnmarshal(t *testing.T) {
 	})
 
 	require.NoError(t, err)
-	require.Equal(t, map[string]any{"a": 1.0}, found)
+	require.Equal(t, map[string]int{"a": 1}, found)
 }
 
 func TestInvalid(t *testing.T) {
