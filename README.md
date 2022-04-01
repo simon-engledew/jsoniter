@@ -12,21 +12,21 @@ Use `jsoniter.Iterate` to fire a callback for every object and array value in th
 package main
 
 import (
-	"encoding/json"
-	"fmt"
-	"github.com/simon-engledew/jsoniter"
-	"os"
+    "encoding/json"
+    "fmt"
+    "github.com/simon-engledew/jsoniter"
+    "os"
 )
 
 func main() {
-	d := json.NewDecoder(os.Stdin)
+    d := json.NewDecoder(os.Stdin)
 
-	err := jsoniter.Iterate(d, func(path []json.Token) error {
-		fmt.Println(path)
-		return nil
-	})
-	if err != nil {
-		panic(err)
+    err := jsoniter.Iterate(d, func(path []json.Token) error {
+        fmt.Println(path)
+        return nil
+    })
+    if err != nil {
+        panic(err)
     }
 }
 ```
@@ -39,31 +39,31 @@ To match values that you are interested in, `jsoniter` provides a basic matcher:
 package main
 
 import (
-	"encoding/json"
-	"fmt"
-	"github.com/simon-engledew/jsoniter"
-	"os"
+    "encoding/json"
+    "fmt"
+    "github.com/simon-engledew/jsoniter"
+    "os"
 )
 
 func main() {
-	d := json.NewDecoder(os.Stdin)
+    d := json.NewDecoder(os.Stdin)
 
-	// jsoniter.Wildcard will match any token
-	// .some[*].nested.structure
-	matcher := jsoniter.Matcher("some", jsoniter.Wildcard, "nested", "structure")
+    // jsoniter.Wildcard will match any token
+    // .some[*].nested.structure
+    matcher := jsoniter.Matcher("some", jsoniter.Wildcard, "nested", "structure")
 
-	var hits int
+    var hits int
 
-	err := jsoniter.Iterate(d, func(path []json.Token) error {
-		if matcher(path) {
-			hits += 1
-		}
-		return nil
-	})
-	if err != nil {
-		panic(err)
+    err := jsoniter.Iterate(d, func(path []json.Token) error {
+        if matcher(path) {
+            hits += 1
+        }
+        return nil
+    })
+    if err != nil {
+        panic(err)
     }
-	fmt.Printf("found %d items matching path\n", hits)
+    fmt.Printf("found %d items matching path\n", hits)
 }
 ```
 
@@ -73,30 +73,30 @@ By closing over the decoder it is also possible to decode values during iteratio
 package main
 
 import (
-	"encoding/json"
-	"fmt"
-	"github.com/simon-engledew/jsoniter"
-	"os"
+    "encoding/json"
+    "fmt"
+    "github.com/simon-engledew/jsoniter"
+    "os"
 )
 
 func main() {
-	d := json.NewDecoder(os.Stdin)
+    d := json.NewDecoder(os.Stdin)
 
-	// .some[0].nested.structure
-	matcher := jsoniter.Matcher("some", 0, "nested", "structure")
+    // .some[0].nested.structure
+    matcher := jsoniter.Matcher("some", 0, "nested", "structure")
 
-	var found any
+    var found any
 
-	err := jsoniter.Iterate(d, func(path []json.Token) error {
-		if matcher(path) {
-			return d.Decode(&found)
-		}
-		return nil
-	})
-	if err != nil {
-		panic(err)
-	}
-	fmt.Println("found: ", found)
+    err := jsoniter.Iterate(d, func(path []json.Token) error {
+        if matcher(path) {
+            return d.Decode(&found)
+        }
+        return nil
+    })
+    if err != nil {
+        panic(err)
+    }
+    fmt.Println("found: ", found)
 }
 ```
 
