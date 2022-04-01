@@ -5,6 +5,7 @@ import (
 	"errors"
 )
 
+// Wildcard will match any json.Token when passed as a pattern argument to Matcher.
 const Wildcard = iota
 
 const (
@@ -14,6 +15,7 @@ const (
 	tokenObjectEnd   = json.Delim('}')
 )
 
+// Matcher returns a predicate which will match the series of tokens described by pattern.
 func Matcher(pattern ...json.Token) func(path []json.Token) bool {
 	return func(path []json.Token) bool {
 		if len(pattern) != len(path) {
@@ -94,7 +96,35 @@ func array(d *json.Decoder, path []json.Token, fn func(path []json.Token) error)
 	return nil
 }
 
-// Iterate will call fn for every path in the JSON document.
+// Iterate triggers a callback for every object or array value in the JSON document being decoded.
+//
+// Rather than unmarshal the entire document at once, Iterate considers the document on a token by token basis.
+// At each value callback will be passed the current path of the document, e.g:
+//
+// {"a": {"b": [1]}}
+//
+// will call back three times with the paths:
+//
+// * ["a"]
+// * ["a", "b"]
+// * ["a", "b", 0]
+//
+// To avoid allocations the path slice will be reused between callbacks and must not be retained or modified.
+//
+// It is safe to call `Decode` on the decoder during the callback to unmarshal a value from the document.
+// Afterwards Iterate will continue to process the enclosing object or array:
+//
+//    var found any
+//    jsoniter.Iterate(d, func(path []json.Token) error {
+//        if matches(path) {
+//            // decode the interesting section of the document:
+//            return d.Decode(&found)
+//        }
+//        return nil
+//    })
+//
+//
+// Iterate will consume and discard the corresponding value if it has not been read by the callback.
 func Iterate(d *json.Decoder, fn func(path []json.Token) error) error {
 	return value(d, make([]json.Token, 0, 32), fn)
 }
